@@ -13,128 +13,98 @@ const Homepage = () => {
   const [loading, setLoading] = useState(true);
   const [promos, setPromos] = useState();
   const [search, setSearch] = useState();
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   useEffect(() => {
+    if (!loginToken) navigate("/login");
+    if (searchKeyword.length < 3) setSearchKeyword("");
+
+    getPromos();
+
     const timer = setTimeout(() => {
       setLoading(false);
     }, 2000);
     window.scroll(0, 0);
     return () => clearTimeout(timer);
-  }, [loading]);
+  }, [page, searchKeyword, loginToken]);
 
-  useEffect(() => {
-    axios
-      .get(API_URL + "listPromos")
-      .then((res) => setPromos(res.data))
-      .catch((error) => {
-        console.log(error);
-      });
-  }, [promos]);
-
-  useEffect(() => {
-    if (!loginToken) navigate("/login");
-  }, [loginToken]);
-
-  const usePagination = (posts, defaultPage = 1, amountPerPage = 8) => {
-    const [currentPage, setCurrentPage] = useState(defaultPage);
-    const [postsPerPage] = useState(amountPerPage);
-    const indexOfLastPost = currentPage * postsPerPage;
-    const indexOfFirstPost = indexOfLastPost - postsPerPage;
-    let currentPosts = [];
-    let amountOfPages = 0;
-    if (Array.isArray(posts)) {
-      currentPosts = posts.slice(indexOfFirstPost, indexOfLastPost);
-      amountOfPages = Math.ceil(posts.length / postsPerPage);
-    }
-    return {
-      setCurrentPage,
-      amountOfPages,
-      currentPosts,
-    };
+  const getPromos = async () => {
+    const response = await axios.get(
+      API_URL +
+        "listPromos?brand_like=" +
+        searchKeyword +
+        "&_page=" +
+        page +
+        "&_limit=8"
+    );
+    setLoading(true);
+    setPromos(response.data);
+    var total = response.headers["x-total-count"];
+    total = total / 8;
+    setTotalPages(total);
   };
 
-  const { setCurrentPage, currentPosts, amountOfPages } = usePagination(promos);
+  const searchData = (e) => {
+    e.preventDefault();
+    setPage(1);
+    setSearchKeyword(search);
+  };
 
-  console.log(search);
+  console.log(totalPages);
   return (
     <Box
       sx={{
         minHeight: "100vh",
       }}
     >
-      <Navbar setSearch={setSearch} setLoading={setLoading} />
+      <Navbar setSearch={setSearch} searchData={searchData} />
       <Stack direction="row" justifyContent="center" alignItems="center">
-        {search ? (
-          <Box width={{ xs: "100%", sm: "60%" }} p={2}>
-            <Stack
-              direction="row"
-              justifyContent="center"
-              alignItems="center"
-              sx={{ flexWrap: "wrap", marginTop: "15px" }}
-              gap="30px"
-            >
-              {search &&
-                search.map((promo) => (
-                  <Post
-                    key={promo.id}
-                    loading={loading}
-                    promoId={promo.id}
-                    promoImage={promo.imageJenis}
-                    brand={promo.brand}
-                    times={promo.waktuBerakhir}
-                    tittle={promo.jenis}
-                    subtittle={promo.subjenis}
-                    tittlcolors={promo.color}
-                    logo={promo.imageBrand}
-                    payment={promo.pembayaran}
-                  />
-                ))}
-            </Stack>
-          </Box>
-        ) : (
-          <Box width={{ xs: "100%", sm: "60%" }} p={2}>
-            <Stack
-              direction="row"
-              justifyContent="center"
-              alignItems="center"
-              sx={{ flexWrap: "wrap", marginTop: "15px" }}
-              gap="30px"
-            >
-              {currentPosts &&
-                currentPosts.map((promo) => (
-                  <Post
-                    key={promo.id}
-                    loading={loading}
-                    promoId={promo.id}
-                    promoImage={promo.imageJenis}
-                    brand={promo.brand}
-                    times={promo.waktuBerakhir}
-                    tittle={promo.jenis}
-                    subtittle={promo.subjenis}
-                    tittlcolors={promo.color}
-                    logo={promo.imageBrand}
-                    payment={promo.pembayaran}
-                  />
-                ))}
-            </Stack>
-            <Stack
-              direction="row"
-              justifyContent="center"
-              spacing={2}
-              sx={{ marginTop: "40px", marginBottom: "30px" }}
-            >
-              <Pagination
-                count={amountOfPages}
-                showFirstButton
-                showLastButton
-                variant="outlined"
-                onChange={(event, page) => (
-                  setLoading(true), setCurrentPage(page)
-                )}
-              />
-            </Stack>
-          </Box>
-        )}
+        <Box width={{ xs: "100%", sm: "60%" }} p={2}>
+          <Stack
+            direction="row"
+            justifyContent="center"
+            alignItems="center"
+            sx={{ flexWrap: "wrap", marginTop: "15px" }}
+            gap="30px"
+          >
+            {promos &&
+              promos.map((promo) => (
+                <Post
+                  key={promo.id}
+                  loading={loading}
+                  promoId={promo.id}
+                  promoImage={promo.imageJenis}
+                  brand={promo.brand}
+                  times={promo.waktuBerakhir}
+                  tittle={promo.jenis}
+                  subtittle={promo.subjenis}
+                  tittlcolors={promo.color}
+                  logo={promo.imageBrand}
+                  payment={promo.pembayaran}
+                />
+              ))}
+          </Stack>
+          <Stack
+            direction="row"
+            justifyContent="center"
+            spacing={2}
+            sx={
+              totalPages > 1
+                ? { display: "flex", marginTop: "40px", marginBottom: "30px" }
+                : { display: "none" }
+            }
+          >
+            <Pagination
+              count={totalPages}
+              showFirstButton
+              showLastButton
+              variant="outlined"
+              onChange={(event, currentPage) => setPage(currentPage)}
+            />
+          </Stack>
+        </Box>
       </Stack>
     </Box>
   );

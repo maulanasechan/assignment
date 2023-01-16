@@ -8,10 +8,9 @@ import {
   Typography,
 } from "@mui/material";
 import React, { useState } from "react";
-import { API_URL } from "../utils/Api";
-import axios from "axios";
 import { useDispatch } from "react-redux";
 import { logout } from "../features/users";
+import { useNavigate } from "react-router-dom";
 
 const StyledSearch = styled("div")(({ theme }) => ({
   background: "white",
@@ -39,22 +38,15 @@ const StyledAppBar = styled(AppBar)({
     "linear-gradient(to right, #0F0E0D 20%, #878776 20% 40%, #AFB1A2 40% 60%, #FFFFFF 60% 80%, #AB7E16 80% 100% )",
 });
 
-const Navbar = ({ setSearch, setLoading, search }) => {
+const Navbar = ({ setSearch, searchData }) => {
+  const navigate = useNavigate();
   const [focusSearch, setFocusSearch] = useState(false);
-  const [searchValue, setSearchValue] = useState();
   const dispatch = useDispatch();
 
-  const handleSubmit = (e) => {
+  const handleLogout = (e) => {
     e.preventDefault();
-    setLoading(true);
-    if (searchValue && searchValue.length >= 3) {
-      axios
-        .get(API_URL + "listPromos?brand_like=" + searchValue)
-        .then((res) => setSearch(res.data))
-        .catch((error) => {
-          console.log(error);
-        });
-    } else setSearch(null);
+    dispatch(logout());
+    navigate("/login");
   };
 
   return (
@@ -85,7 +77,7 @@ const Navbar = ({ setSearch, setLoading, search }) => {
             }
           />
           <form
-            onSubmit={handleSubmit}
+            onSubmit={searchData}
             style={{
               width: "100%",
             }}
@@ -95,11 +87,11 @@ const Navbar = ({ setSearch, setLoading, search }) => {
               fullWidth={true}
               onFocus={() => setFocusSearch(!focusSearch)}
               onBlur={() => setFocusSearch(!focusSearch)}
-              onChange={(e) => setSearchValue(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </form>
         </StyledSearch>
-        <StyledIconButton onClick={() => dispatch(logout())}>
+        <StyledIconButton onClick={handleLogout}>
           <Logout
             sx={{
               color: "#0F0E0D",
